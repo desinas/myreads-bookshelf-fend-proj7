@@ -10,6 +10,8 @@ To get started developing right away:
 
 * install all project dependencies with `npm install`
 * start the development server with `npm start`
+* another library needed to implement app routing,
+so to use it run `npm install --save react-router-dom`
 
 ## What You're Getting
 ```bash
