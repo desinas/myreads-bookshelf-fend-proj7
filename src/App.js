@@ -1,23 +1,46 @@
-import React from 'react'
+import React, { Component } from 'react'
 import {Route, Link} from 'react-router-dom'
 import * as BooksAPI from './BooksAPI'
 import './App.css'
 import ListOfBooks from './ListOfBooks'
-
+import Book from "./Book"
 /**
- * TODO: Instead of using this state variable to keep track of which page
- * we're on, use the URL in the browser's address bar. This will ensure that
- * users can use the browser's back and forward buttons to navigate between
- * pages, as well as provide a good URL they can bookmark and share.
- */
-class BooksApp extends React.Component {
+* TODO: Instead of using this state variable to keep track of which page
+* we're on, use the URL in the browser's address bar. This will ensure that
+* users can use the browser's back and forward buttons to navigate between
+* pages, as well as provide a good URL they can bookmark and share.
+*/
+class BooksApp extends Component {
   state = {
     books: [],
     query: '',
     showingBooks: []
   }
 
- /** Component lifecycle event method is used to hook of get-all-books method
+  updateShelf = (book, shelf) => {
+    let books;
+    if (this.state.books.findIndex(b => b.id === book.id) > 0) {
+      // change the position of an existing book in the shelf
+      books = this.state.books.map(b => {
+        if (b.id === book.id) {
+          return {...book, shelf}
+        } else {
+          return b
+        }
+      })
+    } else {
+      // add a new book to the shelf
+      books = [...this.state.books, {...book, shelf}]
+    }
+
+    this.setState({books})
+
+    BooksAPI.update(book, shelf).then((data) => {
+      // shelf updated on the server
+    })
+  }
+  /**
+  * Component lifecycle event method is used to hook the get-all-books method
   * immediately after the component is inserted into the DOM and rendered
   */
   componentDidMount() {
@@ -25,7 +48,6 @@ class BooksApp extends React.Component {
       this.setState({books})
     })
   }
-
   /** Managing input state by checking if there is a query,
   * using Books API search method that returns a promise response with then
   * and change the showing books to the user
@@ -55,60 +77,37 @@ class BooksApp extends React.Component {
 
   render() {
     const {query} = this.state
-    return (
-      <div className="app">
+    return ( <div className="app">
 
-          <Route exact path="/search" render={() => (
-            <div className="search-books">
-              <div className="search-books-bar">
-                <Link className="close-search" to="/">Close</Link>
-                <div className="search-books-input-wrapper">
-                  <input type="text"
-                         placeholder="Search by title or author"
-                         value={query}
-                         onChange={(event) => this.updateQuery(event.target.value)}
-                  />
+        <Route exact path="/search" render={() => (
+          <div className="search-books">
+            <div className="search-books-bar">
+              <Link className="close-search" to="/">Close</Link>
+              <div className="search-books-input-wrapper">
+                <input type="text"
+                       placeholder="Search by title or author"
+                       value={query}
+                       onChange={(event) => this.updateQuery(event.target.value)}
+                />
 
-                </div>
-              </div>
-              <div className="search-books-results">
-                <ol className="books-grid">
-                  {this.state.showingBooks.map((book, i) => (
-                    <li key={i}>
-                      <div className="book">
-                        <div className="book-top">
-                          <div className="book-cover" style={{
-                            width: 128,
-                            height: 192,
-                            backgroundImage: book.imageLinks ?
-                              `url(${book.imageLinks.thumbnail})` : ''
-                          }}></div>
-                          <div className="book-shelf-changer">
-                            <select onChange={this.changeBookShelf} value={this.state.shelf}>
-                              <option value="move" disabled>Move to...</option>
-                              <option value="currentlyReading">Currently Reading
-                              </option>
-                              <option value="wantToRead">Want to Read</option>
-                              <option value="read">Read</option>
-                              <option value="none">None</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div className="book-title">{book.title}</div>
-                        <div className="book-authors">{book.authors ? book.authors.toString() : ' '}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
               </div>
             </div>
-          )} />
-          <Route exact path="/" render={() => (
-            <ListOfBooks/>
-          )}/>
+            <div className="search-books-results">
+              <ol className="books-grid">
+                {this.state.showingBooks.map((book, i) => (
+                  <Book key={i} book={book}
+                        onUpdateBook={(book, shelf) => this.updateShelf(book, shelf)}/>
+                ))}
+              </ol>
+            </div>
+          </div>
+        )} />
+        <Route exact path="/" render={() => (
+          <ListOfBooks books={this.state.books}
+                     onUpdateShelf={(book, shelf) => this.updateShelf(book, shelf)}/>
+        )}/>
 
-      </div>
-    )
+    </div> )
   }
 }
 
